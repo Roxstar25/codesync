@@ -130,7 +130,7 @@ function generateAIReview(code, language) {
   }
   
   // Check for functions
-  const functionCount = (code.match(/function\s+\w+|const\s+\w+\s*=\s*($[^)]*$\s*=>|$?\w+$?\s*=>)/g) || []).length;
+  const functionCount = (code.match(/function\s+\w+/g) || []).length;
   if (functionCount === 0 && code.length > 50) {
     issues.push({ 
       type: 'warning', 
