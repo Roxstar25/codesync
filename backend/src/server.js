@@ -13,14 +13,21 @@ const io = new Server(server, {
   }
 });
 
-const PORT = process.env.PORT || 3001;
-
+ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+// Root route
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'CodeSync API is running',
+    endpoints: ['/health', '/socket.io'],
+    version: '1.0.0'
+  });
 });
 
 // Store rooms and their code
