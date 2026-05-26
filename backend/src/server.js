@@ -102,30 +102,103 @@ io.on('connection', (socket) => {
   });
 });
 
-// Simple AI review simulation
+// Smart AI review simulation
 function generateAIReview(code, language) {
   const issues = [];
+  let score = 100;
   
-  if (code.includes('var ')) {
-    issues.push({ type: 'warning', line: 1, message: 'Use let or const instead of var' });
+  // Check for var usage
+  const varCount = (code.match(/\bvar\b/g) || []).length;
+  if (varCount > 0) {
+    issues.push({ 
+      type: 'warning', 
+      line: 1, 
+      message: `Found ${varCount} use(s) of 'var'. Use 'let' or 'const' instead.` 
+    });
+    score -= varCount * 5;
   }
-  if (code.includes('console.log')) {
-    issues.push({ type: 'info', line: 1, message: 'Remove console.log before production' });
+  
+  // Check for console.log
+  const logCount = (code.match(/console\.log/g) || []).length;
+  if (logCount > 0) {
+    issues.push({ 
+      type: 'info', 
+      line: 1, 
+      message: `Found ${logCount} console.log statement(s). Remove before production.` 
+    });
+    score -= logCount * 3;
   }
-  if (!code.includes('function') && !code.includes('=>')) {
-    issues.push({ type: 'info', line: 1, message: 'Consider modularizing your code with functions' });
+  
+  // Check for functions
+  const functionCount = (code.match(/function\s+\w+|const\s+\w+\s*=\s*($[^)]*$\s*=>|$?\w+$?\s*=>)/g) || []).length;
+  if (functionCount === 0 && code.length > 50) {
+    issues.push({ 
+      type: 'warning', 
+      line: 1, 
+      message: 'No functions found. Consider modularizing your code.' 
+    });
+    score -= 10;
   }
-  if (code.length > 500) {
-    issues.push({ type: 'warning', line: 1, message: 'File is getting long. Consider splitting into modules' });
+  
+  // Check code length
+  const lines = code.split('\n').length;
+  if (lines > 50) {
+    issues.push({ 
+      type: 'info', 
+      line: 1, 
+      message: `File is ${lines} lines long. Consider splitting into modules.` 
+    });
+    score -= 5;
   }
+  
+  // Check for comments
+  const commentCount = (code.match(/\/\/|\/\*|\*/g) || []).length;
+  if (commentCount === 0 && lines > 10) {
+    issues.push({ 
+      type: 'info', 
+      line: 1, 
+      message: 'No comments found. Add documentation for clarity.' 
+    });
+    score -= 5;
+  }
+  
+  // Check for semicolons (JS/TS)
+  if (language === 'javascript' || language === 'typescript') {
+    const linesWithoutSemicolons = code.split('\n').filter(line => {
+      const trimmed = line.trim();
+      return trimmed.length > 0 && 
+             !trimmed.endsWith(';') && 
+             !trimmed.endsWith('{') && 
+             !trimmed.endsWith('}') &&
+             !trimmed.startsWith('//') &&
+             !trimmed.startsWith('/*') &&
+             !trimmed.startsWith('*') &&
+             !trimmed.startsWith('import') &&
+             !trimmed.startsWith('export');
+    }).length;
+    
+    if (linesWithoutSemicolons > 5) {
+      issues.push({ 
+        type: 'info', 
+        line: 1, 
+        message: 'Inconsistent semicolon usage. Choose a style and stick to it.' 
+      });
+      score -= 3;
+    }
+  }
+  
+  // Ensure score is between 0-100
+  score = Math.max(0, Math.min(100, score));
   
   return {
     summary: `Found ${issues.length} suggestion${issues.length !== 1 ? 's' : ''}`,
     issues,
-    score: Math.max(0, 100 - issues.length * 15)
+    score,
+    metrics: {
+      lines,
+      functions: functionCount,
+      comments: commentCount
+    }
   };
 }
 
-server.listen(PORT, () => {
-  console.log(`CodeSync server running on port ${PORT}`);
-});
