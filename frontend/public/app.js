@@ -1,5 +1,5 @@
 // CodeSync - Real-time AI Code Review & Pair Programming
-const SOCKET_URL = 'http://localhost:3001';
+const SOCKET_URL = 'https://codesync-production-4a7a.up.railway.app';
 let socket;
 let editor;
 let currentRoom = 'room-1';
